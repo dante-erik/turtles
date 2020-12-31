@@ -151,7 +151,7 @@ function countAllOf(search_item)
         local item = turtle.getItemDetail(slot)
         if(item ~= nil) then
             if(item["name"] == search_item) then
-                count += turtle.getItemCount()
+                count = count + turtle.getItemCount()
             end
         end
     end
@@ -599,7 +599,7 @@ function start()
             if(col ~= width) then
                 turnAround()
             end
-            transmit("Completed Column #" .. col .. "   Fuel: " .. turtle.getFuelLevel() .. "   Completion: " .. 100*col*tier/*width*height .. "%")
+            transmit("Completed Column #" .. col .. "   Fuel: " .. turtle.getFuelLevel() .. "   Completion: " .. 100*col*tier/width*height .. "%")
         end
         transmit("Completed Layer #" .. tier .. "   Fuel: " .. turtle.getFuelLevel() .. "   Completion: " .. 100*tier/height .. "%")
         if(tier < height) then
