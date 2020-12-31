@@ -142,6 +142,41 @@ function getItemIndex(find_item)
     return nil
 end
 
+function countAllOf(search_item)
+    if(type(search_item) ~= "string") then
+        error("Expected string but got " .. type(search_item))
+    end
+    count = 0
+    for slot = 1, SLOT_COUNT, 1 do
+        local item = turtle.getItemDetail(slot)
+        if(item ~= nil) then
+            if(item["name"] == search_item) then
+                count += turtle.getItemCount()
+            end
+        end
+    end
+    return count
+end
+
+function countStoredFuel()
+    return countAllOf("minecraft:coal") * 80 + countAllOf("minecraft:coal_block") * 720 + countAllOf("minecraft:lava_bucket") * 1000
+end
+
+function coalesce()
+    for slot = 1, SLOT_COUNT - 1, 1 do
+        local base_item = turtle.getItemDetail(slot)
+        if(base_item ~= nil) then
+            for i = slot + 1, SLOT_COUNT, 1 do
+                local item = turtle.getItemDetail(slot)
+                if(item ~= nil and base_item["name"] == item["name"]) then
+                    turtle.select(i)
+                    turtle.transferTo(slot)
+                end
+            end
+        end
+    end
+end
+
 function getNumberFreeSlots()
     local freeSlots = 0
     for slot = 1, SLOT_COUNT, 1 do
@@ -186,12 +221,21 @@ function manageInventory(dumpAll)
         return false
     end
     -- Chest is now deployed
+    coalesce()
     for slot = 1, SLOT_COUNT, 1 do
         local item = turtle.getItemDetail(slot)
         if(item ~= nil) then
             if(dumpAll or shouldReturnItem(item)) then
                 turtle.select(slot)
                 turtle.dropUp()
+            elseif not shouldReturnItem(item) and turtle.getItemSpace(slot) <= 0 then
+                for i = slot + 1, SLOT_COUNT, 1 do
+                    local dump = turtle.getItemDetail(i)
+                    if(dump ~= nil and item["name"] == dump["name"]) then
+                        turtle.select(i)
+                        turtle.dropUp()
+                    end
+                end
             end
         end
     end
@@ -530,6 +574,7 @@ function start()
                 end
                 if(getNumberFreeSlots() < 1) then
                     -- transmit("Inventory Full, Dropping Items...")
+                    coalesce()
                     dropItems()
                     if(getNumberFreeSlots() < 1) then
                         if(not manageInventory()) then
@@ -542,6 +587,7 @@ function start()
                 end
                 detectAndDig()
                 while not forward() do
+                    checkFuel()
                     if turtle.detect() then
                         turtle.dig()
                     else
